@@ -5,6 +5,18 @@ ArtLight Control - Changelog
 https://github.com/onaiaku/ArtLight
 
 ------------------------------------------------
+Version 1.5.4 (11/10/2026)
+------------------------------------------------
+ArtLight Server 1.5.4 makes a host tell every device what it is streaming.
+
+1.5.3 said a second device would see what the host was running, and it did
+not. A device that opened ArtMoon while the host was streaming still showed
+that machine as free, with no streaming badge and no resume or stop buttons.
+
+Any device that is allowed to view a host is now told what that host is
+doing, and shows the stream that is running, with resume and stop.
+
+------------------------------------------------
 Version 1.5.3 (10/10/2026)
 ------------------------------------------------
 ArtLight Server 1.5.3 makes the virtual gamepad driver install.
