@@ -190,12 +190,14 @@ build() {
 
     cmake "${_cmake_options[@]}"
 
-    # --no-net: validation must not depend on live network. Without it, appstreamcli's
-    # url-not-reachable check makes the whole Arch job a coin flip on whatever the URLs
-    # answer at that moment — the 1.5.3 tag build died on a GitHub 503 for a docs page
-    # while every Windows job passed. Metadata validation is about the metadata.
+    # Keep both validators off the network, so this step judges our metadata and not
+    # whatever a URL happens to answer at that moment — the 1.5.3 tag build died on a
+    # transient GitHub 503 during appstreamcli's url-not-reachable check while every
+    # Windows job passed.
+    # The two tools spell it differently: appstreamcli takes --no-net, appstream-util
+    # (from appstream-glib) takes --nonet. Verified against each tool, not assumed.
     appstreamcli validate --no-net "build/io.github.onaiaku.ArtLight.metainfo.xml"
-    appstream-util validate --no-net "build/io.github.onaiaku.ArtLight.metainfo.xml"
+    appstream-util validate --nonet "build/io.github.onaiaku.ArtLight.metainfo.xml"
     desktop-file-validate "build/io.github.onaiaku.ArtLight.desktop"
     desktop-file-validate "build/io.github.onaiaku.ArtLight.terminal.desktop"
 

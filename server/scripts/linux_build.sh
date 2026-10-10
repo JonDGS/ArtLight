@@ -711,11 +711,12 @@ function run_step_validation() {
   echo "Running step: Validation"
 
   # Run appstream validation, etc.
-  # --no-net: the link-reachability checks are not about our metadata and they turn this
-  # step into a coin flip on whatever the URLs answer at that moment. See the same note in
-  # server/packaging/linux/Arch/PKGBUILD.
+  # Keep both validators off the network so this step judges our metadata and not whatever
+  # a URL happens to answer at that moment. The two tools spell the flag differently:
+  # appstreamcli takes --no-net, appstream-util (appstream-glib) takes --nonet.
+  # See the same note in server/packaging/linux/Arch/PKGBUILD.
   appstreamcli validate --no-net "build/io.github.onaiaku.ArtLight.metainfo.xml"
-  appstream-util validate --no-net "build/io.github.onaiaku.ArtLight.metainfo.xml"
+  appstream-util validate --nonet "build/io.github.onaiaku.ArtLight.metainfo.xml"
   desktop-file-validate "build/io.github.onaiaku.ArtLight.desktop"
   if [[ "$appimage_build" == 0 ]]; then
     desktop-file-validate "build/io.github.onaiaku.ArtLight.terminal.desktop"
