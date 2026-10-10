@@ -3869,7 +3869,16 @@ namespace nvhttp {
         const auto identity = resolve_client_identity(request, verified_client);
         const auto remote_gate = remote_role_gate_snapshot_for_client(identity.uuid);
         const auto current_app = proc::proc.resolve_app(current_appid);
-        const remote_session::caller_t caller {.uuid = identity.uuid, .paired = !identity.uuid.empty()};
+        // The view permission is what exposes_active_game() gates on, so it has to be
+        // filled in here as well. It was left at its default (false) on this path, which
+        // read as "this caller may not view" for every client — so the active game was
+        // never reported and every other device was told the host was free mid-stream.
+        // Same fields as the /launch and /resume callers further down.
+        const remote_session::caller_t caller {
+          .uuid = identity.uuid,
+          .paired = !identity.uuid.empty(),
+          .may_view = has_client_perm(verified_client, PERM::view),
+        };
         const remote_session::game_t game {
           .running = current_appid > 0 && current_appid != proc::input_only_app_id,
           .owner_uuid = active_session.client_uuid,
