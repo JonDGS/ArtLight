@@ -51,7 +51,16 @@ namespace ArtLightControl
             {
                 // Sessions are stored newest-first (SessionLogger.StartSession inserts at 0),
                 // so the first finished one is the last one that ran.
-                var last = SessionLogger.Load().FirstOrDefault(s => s.EndTime != null);
+                //
+                // "Last played" means the last GAME, and a session that credited none is not one.
+                // Streaming the whole desktop to work in it is a stream, not a game played, and it
+                // is credited no games now that SessionProcessMonitor refuses to count the desktop
+                // wallpaper. Reporting it here would hand the client a block with nothing to name —
+                // or, before that fix, the wallpaper that happened to be running. So skip back to
+                // the newest session that credited something. The Dashboard is unaffected: it reads
+                // SessionLogger itself and still lists every session, game or not.
+                var last = SessionLogger.Load()
+                    .FirstOrDefault(s => s.EndTime != null && s.HasGamesDetected);
                 if (last == null)
                     return "{\"v\":1,\"has\":false}";
 

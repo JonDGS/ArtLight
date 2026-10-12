@@ -108,11 +108,40 @@ namespace ArtLightControl
         private Timer? _timer;
         private bool _disposed;
 
+        /// <summary>
+        /// Library entries that are installed apps but never a game anyone <em>played</em>, so a
+        /// session must not be credited to them.
+        /// <para>Wallpaper Engine is the one that matters. It is a Steam app — so the scanner lists
+        /// it like any other — it starts with Windows and stays running, and during a stream of the
+        /// whole <em>desktop</em> rather than a game it can be the only library entry running at
+        /// all. Without this, a desktop stream was credited to it and the client's last-played block
+        /// came back as Wallpaper Engine every time. Nik, 12/10/2026: <i>"a desktop stream always
+        /// come back as wallpaper engine simply because the desktop version of our app only track
+        /// GAMES and not apps ... so to stop this we would have to put a blacklist on wallpaper
+        /// engine, so it isnt being flagged as a game during a desktop stream."</i></para>
+        /// <para>Matched on the library entry's display name, which is the name a session would
+        /// store. It stays fully launchable as an app — this only stops it being credited as a
+        /// game. The list above answers the neighbouring question, "is this process the store's own
+        /// client?"; this one answers "is this entry ever the thing that was played?"</para>
+        /// </summary>
+        private static readonly HashSet<string> _neverAGame = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Wallpaper Engine",
+        };
+
+        internal static bool IsNeverAGame(string name) =>
+            !string.IsNullOrEmpty(name) && _neverAGame.Contains(name);
+
         public SessionProcessMonitor(IReadOnlyList<GameLibraryEntry> games)
         {
-            _exeToGame = BuildExeLookup(games);
-            _installDirToGame = BuildDirLookup(games);
-            _processNameToGame = BuildProcessNameLookup(games);
+            // Filtered once, here, so every strategy misses it. All three lookups read this same
+            // library, and a list that covered only one of them would credit the wallpaper again
+            // through another the moment Steam renamed a binary.
+            var creditable = games.Where(g => !IsNeverAGame(g.Name)).ToList();
+
+            _exeToGame = BuildExeLookup(creditable);
+            _installDirToGame = BuildDirLookup(creditable);
+            _processNameToGame = BuildProcessNameLookup(creditable);
         }
 
         public void Start()
