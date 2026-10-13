@@ -87,6 +87,16 @@ namespace ArtLightControl
 
         public App()
         {
+            // Wired here rather than inside CrashLogger, because ArtLightControl.Core carries
+            // no WinUI reference. This is the hook that fires for a UI-thread exception on its
+            // way out; the stowed-exception path (0xc000027b) is covered by the first-chance
+            // hook in CrashLogger, which sees the throw before the framework stows it.
+            // Deliberately NOT setting e.Handled — the crash is left to happen exactly as it
+            // does today, so this changes nothing except that a record survives it.
+            this.UnhandledException += (_, e) =>
+                CrashLogger.Log("FATAL / Application.UnhandledException",
+                                e.Exception, "Message=" + e.Message);
+
             this.RequestedTheme = ApplicationTheme.Dark;
             this.InitializeComponent();
         }

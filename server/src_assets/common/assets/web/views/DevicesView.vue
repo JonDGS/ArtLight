@@ -115,6 +115,9 @@ const error = ref('');
 const notice = ref('');
 const busyUuid = ref('');
 const openEditors = ref<Set<string>>(new Set());
+// Which clients have a permission change in flight. Kept apart from busyUuid so
+// ticking a box does not lock the rest of the editor's form while it saves.
+const permissionsBusy = ref<Set<string>>(new Set());
 const pendingAction = ref<PendingAction | null>(null);
 const confirmOpen = ref(false);
 let refreshTimer: number | undefined;
@@ -737,6 +740,63 @@ async function saveDevice(device: PairedDevice): Promise<void> {
   }
 }
 
+// Permissions save on their own, the moment a box is flipped. Everything else in
+// the editor still waits for Save, so this deliberately does NOT reuse saveDevice:
+// it must not commit a half-typed name or an unfinished command list, and it must
+// not fail on validation of a field the user never touched.
+async function savePermissions(device: PairedDevice, mask: number): Promise<void> {
+  const draft = drafts.value[device.uuid];
+  const origin = draftOrigins.value[device.uuid];
+  if (!draft || !origin || permissionsBusy.value.has(device.uuid)) return;
+
+  const next = mask & PERMISSION_ALL;
+  const previous = origin.permissions & PERMISSION_ALL;
+  if (next === previous) return;
+
+  permissionsBusy.value = new Set(permissionsBusy.value).add(device.uuid);
+  error.value = '';
+  notice.value = '';
+  try {
+    // Build the payload from what the SERVER currently holds and change only the
+    // permission bits, so nothing else in the draft can ride along with a checkbox.
+    const latestResponse = await apiGet<ClientsResponse>('/api/clients/list');
+    if (latestResponse.status === false) throw new Error(t('ui.devices.error.list_rejected'));
+    const latestDevice = latestResponse.named_certs
+      ?.map((item, index) => normalizeDevice(item, index))
+      .find((item) => item.uuid === device.uuid);
+    const base = latestDevice ? draftFromDevice(latestDevice) : origin;
+    const response = await apiPost<MutationResponse>(
+      '/api/clients/update',
+      updatePayload(device, { ...cloneDraft(base), permissions: next }),
+    );
+    if (response.status !== true) throw new Error(t('ui.devices.error.partial_update'));
+
+    // The host has it now, so the draft's origin moves with it. Without this,
+    // Cancel would rewind a tick the server already accepted — the UI and the
+    // host would disagree, which is worse than the old behaviour.
+    const savedOrigin = draftOrigins.value[device.uuid];
+    if (savedOrigin) {
+      draftOrigins.value[device.uuid] = { ...cloneDraft(savedOrigin), permissions: next };
+    }
+    notice.value = t('ui.devices.notice.permissions_updated');
+    await loadDevices(true);
+  } catch (cause) {
+    // the server did not take it — put the box back where the host actually is
+    const current = drafts.value[device.uuid];
+    if (current) current.permissions = previous;
+    error.value =
+      cause instanceof ApiError
+        ? t('clients.update_failed')
+        : cause instanceof Error
+          ? cause.message
+          : t('clients.update_failed');
+  } finally {
+    const rest = new Set(permissionsBusy.value);
+    rest.delete(device.uuid);
+    permissionsBusy.value = rest;
+  }
+}
+
 function requestAction(kind: PendingAction['kind'], device: PairedDevice): void {
   pendingAction.value = { kind, device };
   confirmOpen.value = true;
@@ -1011,8 +1071,10 @@ onBeforeUnmount(() => {
                   :hdr-profiles-loaded="hdrProfilesLoaded"
                   :hdr-profiles-error="hdrProfilesError"
                   :busy="busyUuid === device.uuid"
+                  :permissions-busy="permissionsBusy.has(device.uuid)"
                   :control-id-prefix="`client-${device.uuid}`"
                   @save="saveDevice(device)"
+                  @save-permissions="(mask: number) => savePermissions(device, mask)"
                   @cancel="resetDraft(device)"
                   @load-display-devices="loadDisplayDevices"
                   @load-hdr-profiles="loadHdrProfiles"

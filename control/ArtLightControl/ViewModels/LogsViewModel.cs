@@ -350,11 +350,17 @@ namespace ArtLightControl.ViewModels
 
         public void Load()
         {
+            CrashLogger.Note("[Sessions] Load() — entering SessionLogger.Load()");
             var list = SessionLogger.Load();
+            CrashLogger.Note($"[Sessions] Load() — SessionLogger returned {list.Count} sessions");
+
             Sessions.Clear();
             foreach (var s in list)
                 Sessions.Add(s);
+
             HasSessions = Sessions.Count > 0;
+            CrashLogger.Note(
+                $"[Sessions] Load() — list populated ({Sessions.Count} items), HasSessions={HasSessions}");
         }
 
         /// <summary>

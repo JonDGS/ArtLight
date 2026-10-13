@@ -22,8 +22,15 @@ namespace ArtLightControl.Views
 
         public LogsView()
         {
+            CrashLogger.Note("[Sessions] LogsView ctor — entering InitializeComponent");
             this.InitializeComponent();
+            CrashLogger.Note("[Sessions] LogsView ctor — XAML parsed and loaded OK");
             this.KeyDown += OnPageKeyDown;
+
+            // Fires once, after the first layout/render pass. If the crash log stops before
+            // this line, the fault is in measure/arrange/render rather than in the view-model.
+            this.Loaded += (_, _) =>
+                CrashLogger.Note("[Sessions] Loaded — first layout and render completed");
         }
 
         // Detail charts are stacked in a single scrollable column; their height grows
@@ -80,7 +87,10 @@ namespace ArtLightControl.Views
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
+            CrashLogger.Note("[Sessions] OnNavigatedTo — calling ViewModel.Load()");
             ViewModel.Load();
+            CrashLogger.Note(
+                $"[Sessions] OnNavigatedTo — Load returned, {ViewModel.Sessions.Count} sessions in the list");
         }
 
         // ── Session list ──────────────────────────────────────────────────────
