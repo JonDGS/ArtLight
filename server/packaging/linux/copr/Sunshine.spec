@@ -179,7 +179,8 @@ Requires: libcap >= 2.22
 Requires: libcurl >= 7.0
 Requires: libdrm > 2.4.97
 Requires: libevdev >= 1.5.6
-Requires: libkscreen
+# The display code runs kscreen-doctor; depend on the file, not a library package name.
+Requires: /usr/bin/kscreen-doctor
 Requires: libopusenc >= 0.2.1
 Requires: libva >= 2.14.0
 Requires: libwayland-client >= 1.20.0
@@ -366,6 +367,10 @@ rm -f %{buildroot}%{_prefix}/libexec/vibeshine/artlight-package-preflight
 rm -f %{buildroot}%{_datadir}/libalpm/hooks/00-artlight-quiesce.hook
 rm -f %{buildroot}%{_datadir}/artlight/arch-package-hooks
 rmdir %{buildroot}%{_datadir}/libalpm/hooks %{buildroot}%{_datadir}/libalpm 2>/dev/null || true
+# Build-time marker of the web UI build; nothing reads it at runtime.
+rm -f %{buildroot}%{_datadir}/artlight/web/.build-stamp
+# DKMS source helper ships with a shebang but without the executable bit.
+find %{buildroot}/usr/src -name generate_hdr_edid.py -exec chmod 0755 {} +
 
 %pre
 artlight_controller=%{_prefix}/libexec/vibeshine/artlight-session-controller
