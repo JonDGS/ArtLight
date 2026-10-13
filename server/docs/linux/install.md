@@ -165,6 +165,15 @@ tar -czf ~/rpmbuild/SOURCES/tarball.tar.gz --exclude-vcs .
 rpmbuild -bb ~/artlight.spec
 ```
 
+If the GCC 14 download or install fails, for example after Fedora 43 leaves its mirrors, build
+without CUDA instead. This leaves out ArtLight's native CUDA NVENC backend; NVIDIA GPUs fall back
+to FFmpeg's NVENC and the Vulkan encoders, and AMD and Intel are unaffected. Run this on
+`~/artlight.spec` before `dnf builddep`, then continue from there:
+
+```bash
+sed -i '/^%elif 0%{?fedora} >= 44/,/^%endif/{/^BuildRequires: gcc14/d; s/^%global cuda_version .*/%global cuda_version %{nil}/}' ~/artlight.spec
+```
+
 **Install it** with the installer. It checks the requirements, installs `kernel-devel` for the
 running kernel, and builds the DKMS modules:
 
