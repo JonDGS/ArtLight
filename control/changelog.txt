@@ -5,6 +5,31 @@ ArtLight Control - Changelog
 https://github.com/onaiaku/ArtLight
 
 ------------------------------------------------
+Version 1.5.5 (13/10/2026)
+------------------------------------------------
+ArtLight 1.5.5 fixes Control's session list and stops the desktop
+wallpaper being recorded as a game.
+
+Control's Sessions page could fail and close the app when two games
+were installed under the same name. Call of Duty ships separately from
+both Xbox and Steam, so a machine with both had two entries called Call
+of Duty, and Control failed while it drew the list. It handles repeated
+names now, and the session list opens normally.
+
+Control also writes a log when it goes down. A crash used to close the
+app with nothing left behind to explain it.
+
+Wallpaper Engine runs the whole time a desktop stream is open, and it
+was being credited as the game that was played - in the session list,
+on the last-stream card and on the phone. It is not tracked as a game
+at all now, and the sessions that already named it show no game
+detected.
+
+Ticking a permission box in the Web UI now saves it straight away.
+Changing a client's View or Launch permission used to mean finding the
+Save button at the bottom of the form.
+
+------------------------------------------------
 Version 1.5.4 (11/10/2026)
 ------------------------------------------------
 ArtLight Server 1.5.4 makes a host tell every device what it is streaming.
