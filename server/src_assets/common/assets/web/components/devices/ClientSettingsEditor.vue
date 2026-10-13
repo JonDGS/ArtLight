@@ -70,12 +70,14 @@ const props = defineProps<{
   hdrProfilesLoaded: boolean;
   hdrProfilesError: string;
   busy: boolean;
+  permissionsBusy?: boolean;
   controlIdPrefix: string;
 }>();
 
 const emit = defineEmits<{
   'update:modelValue': [value: ClientDeviceDraft];
   save: [];
+  'save-permissions': [mask: number];
   cancel: [];
   'load-display-devices': [force?: boolean];
   'load-hdr-profiles': [force?: boolean];
@@ -155,6 +157,11 @@ function hasPermission(mask: number): boolean {
 function updatePermission(mask: number, event: Event): void {
   const enabled = (event.target as HTMLInputElement).checked;
   draft.permissions = enabled ? draft.permissions | mask : draft.permissions & ~mask;
+  // A permission is a single on/off setting, so it saves the moment it is
+  // flipped — the same rule the Integrations page follows for its switches.
+  // The whole mask goes out rather than a delta, because the parent owns both
+  // the request and the rollback and needs the state the box now shows.
+  emit('save-permissions', draft.permissions);
 }
 
 function normalizeVirtualMode(value: unknown): ClientVirtualDisplayMode {
@@ -439,12 +446,15 @@ function applyDisplaySelection(selection: ClientDisplaySelection): void {
         <fieldset class="client-permissions">
           <legend>{{ t('ui.devices.editor.permissions_title') }}</legend>
           <p>{{ t('ui.devices.editor.permissions_description') }}</p>
+          <p class="client-permissions__hint">
+            {{ t('ui.devices.editor.permissions_autosave') }}
+          </p>
           <div class="client-permissions__grid">
             <label v-for="permission in permissionOptions" :key="permission.key">
               <input
                 type="checkbox"
                 :checked="hasPermission(permission.mask)"
-                :disabled="busy"
+                :disabled="busy || permissionsBusy"
                 @change="updatePermission(permission.mask, $event)"
               />
               <span>{{ t(`permissions.${permission.key}`) }}</span>
@@ -969,6 +979,10 @@ function applyDisplaySelection(selection: ClientDisplaySelection): void {
   margin: 0;
   color: var(--vs-color-text-secondary);
   font-size: var(--vs-type-size-metadata);
+}
+
+.client-permissions__hint {
+  font-style: italic;
 }
 
 .client-permissions__grid {
