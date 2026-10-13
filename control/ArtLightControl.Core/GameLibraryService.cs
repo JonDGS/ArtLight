@@ -65,6 +65,16 @@ namespace ArtLightControl
                 if (games.Count == 0)
                     return "No games found after filtering.";
 
+                // 3b. Drop never-a-game entries. After enrichment, because enrichment is what can
+                //     rename an entry, and this is the last gate before the list becomes the
+                //     library. Steam reports Wallpaper Engine as an ordinary entry — the app_type
+                //     filter does not catch it — so an explicit list is the only reliable answer.
+                //     Dropping it here is what stops it being a library row, being pushed into the
+                //     host's app list by SunshineSync, and being creditable by the monitor at all.
+                games = games.Where(g => !NeverTrack.Matches(g.Name, g.ExePath)).ToList();
+                if (games.Count == 0)
+                    return "No games found after filtering.";
+
                 // Deduplicate: scanner can return the same game from multiple library paths.
                 // Use SteamAppId, then StoreId (store-specific key), then Store:Name as fallback.
                 games = games

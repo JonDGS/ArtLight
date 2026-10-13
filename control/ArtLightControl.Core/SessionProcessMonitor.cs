@@ -124,13 +124,11 @@ namespace ArtLightControl
         /// game. The list above answers the neighbouring question, "is this process the store's own
         /// client?"; this one answers "is this entry ever the thing that was played?"</para>
         /// </summary>
-        private static readonly HashSet<string> _neverAGame = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "Wallpaper Engine",
-        };
-
-        internal static bool IsNeverAGame(string name) =>
-            !string.IsNullOrEmpty(name) && _neverAGame.Contains(name);
+        // The list itself lives in NeverTrack, which every boundary consults — the library scan,
+        // session history, and this monitor. It used to be a private field here, and that is
+        // exactly why the wallpaper stopped being credited while staying a library row, staying
+        // in session history, and staying on the Dashboard strip and the phone.
+        internal static bool IsNeverAGame(string name) => NeverTrack.IsExcludedName(name);
 
         public SessionProcessMonitor(IReadOnlyList<GameLibraryEntry> games)
         {

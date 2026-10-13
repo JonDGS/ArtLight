@@ -140,6 +140,37 @@ namespace ArtLightControl
         /// <summary>True when the process monitor ran but found no matching game processes.</summary>
         [JsonIgnore] public bool HasNoGamesDetected  => GamesDetected != null && GamesDetected.Count == 0;
 
+        /// <summary>
+        /// Drops never-a-game entries — the desktop wallpaper — from this session's credited games.
+        /// <para>A session that credited only those becomes a session that credited none, which is
+        /// what a desktop stream actually is: the monitor ran, and nothing anyone <em>played</em>
+        /// was running. That flips <see cref="HasGamesDetected"/> false and
+        /// <see cref="HasNoGamesDetected"/> true, so every surface shows its "no games" state
+        /// instead of naming the wallpaper.</para>
+        /// <para>Called on the way out of <see cref="SessionLogger.Load"/>, because rows written
+        /// before <see cref="NeverTrack"/> existed still name it, and every history surface — the
+        /// Sessions table, the Dashboard's last-session strip, the phone's last-played block —
+        /// reads through there. The next save persists the cleaned list.</para>
+        /// </summary>
+        public void StripNeverTrackedGames()
+        {
+            if (GamesDetected == null || GamesDetected.Count == 0) return;
+
+            var kept = NeverTrack.Strip(GamesDetected);
+            if (kept.Count == GamesDetected.Count) return;
+
+            GamesDetected = kept;
+
+            if (GamesDetectedCoverPaths != null)
+            {
+                foreach (var gone in GamesDetectedCoverPaths.Keys
+                             .Where(n => NeverTrack.IsExcludedName(n)).ToList())
+                {
+                    GamesDetectedCoverPaths.Remove(gone);
+                }
+            }
+        }
+
         // ── Display properties ────────────────────────────────────────────────
 
         [JsonIgnore]
@@ -584,6 +615,13 @@ namespace ArtLightControl
 
         public static void EndSession(string endReason = "User", List<string>? gamesDetected = null)
         {
+            // Never-a-game entries are dropped before anything else reads this list, including
+            // the RecordOnlyGameSessions check further down — so a desktop stream that credited
+            // only the wallpaper counts as having played nothing, instead of being recorded as a
+            // Wallpaper Engine session.
+            if (gamesDetected != null)
+                gamesDetected = NeverTrack.Strip(gamesDetected);
+
             // Atomically capture and clear the session ID so concurrent callers
             // (e.g. App_SessionEnding on the OS thread + HandleAutoStreamStop on the UI thread)
             // cannot both proceed past the null check.
@@ -720,7 +758,17 @@ namespace ArtLightControl
                 {
                     if (!File.Exists(LogPath)) return new List<SessionEntry>();
                     string json = File.ReadAllText(LogPath);
-                    return JsonSerializer.Deserialize<List<SessionEntry>>(json) ?? new List<SessionEntry>();
+                    var sessions = JsonSerializer.Deserialize<List<SessionEntry>>(json) ?? new List<SessionEntry>();
+
+                    // Filter on the way out, not on the way in. Every history surface reads
+                    // through here — the Sessions table, the Dashboard's last-session strip, the
+                    // phone's last-played block — so rows written before NeverTrack existed stop
+                    // naming the desktop wallpaper in all of them at once, and the next save
+                    // persists the cleaned list. Stripping only at write time would leave every
+                    // row already in the file dirty.
+                    foreach (var s in sessions) s.StripNeverTrackedGames();
+
+                    return sessions;
                 }
                 catch { return new List<SessionEntry>(); }
             }
