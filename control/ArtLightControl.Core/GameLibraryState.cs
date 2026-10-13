@@ -133,6 +133,43 @@ namespace ArtLightControl
                                    $"{e.Store}:{e.Name}";
 
 
+        /// <summary>
+        /// Builds a duplicate-tolerant lookup from any keyed sequence — use this instead of
+        /// <c>ToDictionary</c> for any key derived from user-editable library data.
+        ///
+        /// A persisted library can legitimately hold the same key twice. The clearest case is
+        /// a display name: "Call of Duty®" ships from both Xbox and Steam, so the library
+        /// holds two entries with that exact name and both are correct. <c>ToDictionary</c>
+        /// throws ArgumentException ("An item with the same key has already been added") on
+        /// that data, and because these lookups run on the UI thread the throw is stowed by
+        /// XAML and kills the process with no log. Last entry wins — callers are looking a
+        /// display name up to find a cover, and either copy is equivalent.
+        /// </summary>
+        public static Dictionary<TKey, TElement> MapBy<TKey, TElement>(
+            IEnumerable<TElement>? source,
+            Func<TElement, TKey> keySelector,
+            IEqualityComparer<TKey>? comparer = null)
+            where TKey : notnull
+        {
+            var map = new Dictionary<TKey, TElement>(comparer);
+            if (source == null) return map;
+            foreach (var item in source)
+            {
+                if (item is null) continue;
+                map[keySelector(item)] = item;
+            }
+            return map;
+        }
+
+        /// <summary>
+        /// Name → entry, case-insensitively, tolerating duplicate display names.
+        /// See <see cref="MapBy"/> for why duplicate names are expected rather than corrupt.
+        /// </summary>
+        public static Dictionary<string, GameLibraryEntry> BuildNameMap(
+            IEnumerable<GameLibraryEntry>? games) =>
+            MapBy(games, g => g.Name, StringComparer.OrdinalIgnoreCase);
+
+
         // ── Static singleton ─────────────────────────────────────────────────
 
         private static GameLibraryState? _current;
@@ -203,7 +240,15 @@ namespace ArtLightControl
         {
             var enabled = Games.Where(g => g.Enabled).ToList();
             if (enabled.Count == 0) return "{}";
-            var dict = enabled.ToDictionary(g => g.Name, g => g.Store);
+
+            // Duplicate display names are legal (same title from two stores), so build the
+            // map by hand — ToDictionary would throw and take the whole command down.
+            var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var g in enabled)
+            {
+                if (string.IsNullOrEmpty(g.Name)) continue;
+                dict[g.Name] = g.Store;
+            }
             return JsonSerializer.Serialize(dict);
         }
     }

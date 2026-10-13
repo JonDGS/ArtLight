@@ -33,9 +33,9 @@ namespace ArtLightControl
             List<DiscoveredGame> games,
             IReadOnlyList<GameLibraryEntry> existingEntries)
         {
-            var stateByAppId = existingEntries
-                .Where(e => e.SteamAppId != null)
-                .ToDictionary(e => e.SteamAppId!, StringComparer.OrdinalIgnoreCase);
+            var stateByAppId = GameLibraryState.MapBy(
+                existingEntries.Where(e => e.SteamAppId != null),
+                e => e.SteamAppId!, StringComparer.OrdinalIgnoreCase);
 
             // Separate Steam vs non-Steam
             var result = new List<DiscoveredGame>();

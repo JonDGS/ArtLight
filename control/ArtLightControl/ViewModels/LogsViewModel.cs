@@ -427,8 +427,8 @@ namespace ArtLightControl.ViewModels
             foreach (var name in s.GamesDetected)
                 target.Add(new SessionGameCover(name));
 
-            var gameMap = GameLibraryState.Current.Games
-                .ToDictionary(g => g.Name, g => g, StringComparer.OrdinalIgnoreCase);
+            // Duplicate display names are legal — see GameLibraryState.BuildNameMap.
+            var gameMap = GameLibraryState.BuildNameMap(GameLibraryState.Current.Games);
 
             for (int i = 0; i < s.GamesDetected.Count; i++)
             {

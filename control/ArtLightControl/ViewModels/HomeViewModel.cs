@@ -1094,8 +1094,8 @@ namespace ArtLightControl.ViewModels
                             {
                                 // Fallback map from live GameLibraryState (for old sessions
                                 // that pre-date the GamesDetectedCoverPaths snapshot field).
-                                var gameMap = GameLibraryState.Current.Games
-                                    .ToDictionary(g => g.Name, g => g, StringComparer.OrdinalIgnoreCase);
+                                // Duplicate display names are legal — see BuildNameMap.
+                                var gameMap = GameLibraryState.BuildNameMap(GameLibraryState.Current.Games);
 
                                 detectedGameCovers = last.GamesDetected
                                     .Select(name =>

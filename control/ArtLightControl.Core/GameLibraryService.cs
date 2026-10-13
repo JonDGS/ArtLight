@@ -94,15 +94,16 @@ namespace ArtLightControl
                 // 5. Merge with persisted state so Enabled flags survive re-syncs.
                 //    Match by: SteamAppId (Steam) → StoreId (non-Steam) → Name (fallback)
                 var autoEntries = state.Games.Where(e => !e.IsManual).ToList();
-                var oldByAppId = autoEntries
-                    .Where(e => e.SteamAppId != null)
-                    .ToDictionary(e => e.SteamAppId!, StringComparer.OrdinalIgnoreCase);
-                var oldByStoreId = autoEntries
-                    .Where(e => e.SteamAppId == null && e.StoreId != null)
-                    .ToDictionary(e => $"{e.Store}:{e.StoreId}", StringComparer.OrdinalIgnoreCase);
-                var oldByName = autoEntries
-                    .Where(e => e.SteamAppId == null && e.StoreId == null)
-                    .ToDictionary(e => e.Name, StringComparer.OrdinalIgnoreCase);
+                // Duplicate-tolerant maps: a persisted file can hold a repeated key, and
+                // ToDictionary would throw and abort the entire sync. See MapBy/BuildNameMap.
+                var oldByAppId = GameLibraryState.MapBy(
+                    autoEntries.Where(e => e.SteamAppId != null),
+                    e => e.SteamAppId!, StringComparer.OrdinalIgnoreCase);
+                var oldByStoreId = GameLibraryState.MapBy(
+                    autoEntries.Where(e => e.SteamAppId == null && e.StoreId != null),
+                    e => $"{e.Store}:{e.StoreId}", StringComparer.OrdinalIgnoreCase);
+                var oldByName = GameLibraryState.BuildNameMap(
+                    autoEntries.Where(e => e.SteamAppId == null && e.StoreId == null));
 
                 var mergedGames = games.Select(g =>
                 {

@@ -107,16 +107,9 @@ namespace ArtLightControl
             // Same two-tier lookup the Dashboard uses: the path snapshotted when the session
             // ended wins, because it still resolves for a game since removed from the library;
             // the live library is the fallback for sessions that predate that snapshot.
-            Dictionary<string, GameLibraryEntry> live;
-            try
-            {
-                live = GameLibraryState.Current.Games
-                    .ToDictionary(g => g.Name, g => g, StringComparer.OrdinalIgnoreCase);
-            }
-            catch
-            {
-                live = new Dictionary<string, GameLibraryEntry>(StringComparer.OrdinalIgnoreCase);
-            }
+            // Tolerates duplicate display names, so there is nothing left to catch. The old
+            // try/catch here silently produced an empty map and quietly dropped every cover.
+            var live = GameLibraryState.BuildNameMap(GameLibraryState.Current.Games);
 
             foreach (string name in entry.GamesDetected.Take(MaxCovers))
             {

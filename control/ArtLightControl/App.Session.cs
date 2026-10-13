@@ -513,8 +513,8 @@ namespace ArtLightControl
                     .Select(g => g.Name)
                     .ToList();
 
-                var gameMap    = GameLibraryState.Current.Games
-                    .ToDictionary(g => g.Name, g => g, StringComparer.OrdinalIgnoreCase);
+                // Duplicate display names are legal — see GameLibraryState.BuildNameMap.
+                var gameMap    = GameLibraryState.BuildNameMap(GameLibraryState.Current.Games);
                 var coverPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var name in fakeGames)
                 {

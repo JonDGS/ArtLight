@@ -118,8 +118,9 @@ namespace ArtLightControl
                 if (GamesDetected == null || GamesDetected.Count == 0)
                     return Array.Empty<GameCoverItem>();
 
-                var gameMap = GameLibraryState.Current.Games
-                    .ToDictionary(g => g.Name, g => g, StringComparer.OrdinalIgnoreCase);
+                // Duplicate display names are legal — "Call of Duty®" ships from both Xbox and
+                // Steam — so the map must tolerate them. See GameLibraryState.BuildNameMap.
+                var gameMap = GameLibraryState.BuildNameMap(GameLibraryState.Current.Games);
 
                 return GamesDetected.Select(name =>
                 {
@@ -472,8 +473,8 @@ namespace ArtLightControl
                         // Snapshot cover paths from the current library state.
                         // Files are never deleted from the covers cache, so paths
                         // resolved now are still valid even after a game is removed.
-                        var gameMap = GameLibraryState.Current.Games
-                            .ToDictionary(g => g.Name, g => g, StringComparer.OrdinalIgnoreCase);
+                        // Duplicate display names are legal — see GameLibraryState.BuildNameMap.
+                        var gameMap = GameLibraryState.BuildNameMap(GameLibraryState.Current.Games);
                         var coverPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                         foreach (var name in games)
                         {
