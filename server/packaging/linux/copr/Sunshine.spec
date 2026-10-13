@@ -713,7 +713,16 @@ artlight_prepare_host_upgrade_fence() (
 artlight_activate_host_upgrade_fence() {
   systemctl daemon-reload || exit 1
   artlight_host_stop_properties=$(timeout --signal=KILL 5 systemctl show artlight.service \
-    --property=RefuseManualStart --property=KillMode --property=SendSIGKILL 2>/dev/null) || exit 1
+    --property=LoadState --property=RefuseManualStart --property=KillMode --property=SendSIGKILL 2>/dev/null) || exit 1
+  # A first installation has no artlight.service yet, and a drop-in alone does
+  # not create one. A masked unit cannot be started either, so there is
+  # nothing to refuse and nothing to stop: a removal that does not reach
+  # artlight_unmask_host_for_controller leaves runtime masks behind, and a
+  # reinstall before a reboot must not fail here.
+  artlight_host_load=$(printf '%%s\n' "$artlight_host_stop_properties" | sed -n 's/^LoadState=//p')
+  case "$artlight_host_load" in
+    not-found | masked | masked-runtime) return 0 ;;
+  esac
   printf '%%s\n' "$artlight_host_stop_properties" | grep -qx 'RefuseManualStart=yes' || exit 1
   printf '%%s\n' "$artlight_host_stop_properties" | \
     grep -qx "KillMode=$artlight_upgrade_kill_mode" || exit 1
