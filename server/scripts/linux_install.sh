@@ -107,11 +107,6 @@ require_root() {
   fi
 }
 
-require_pacman() {
-  command -v pacman >/dev/null 2>&1 ||
-    die 'pacman was not found. The Linux beta ships as a native package for Arch Linux and CachyOS only.'
-}
-
 require_package_manager() {
   if command -v pacman >/dev/null 2>&1; then
     pkg_mgr=pacman
