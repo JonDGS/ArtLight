@@ -272,7 +272,7 @@ printf 'Retired running kernels require a reboot, not mismatched header installa
 
 # First install must request a reboot even if driver status later reports loaded.
 (
-  pacman() { [[ "$*" == '-Q artlight' ]] && return "$package_status"; }
+  pacman() { [[ "$*" == '-Qq artlight' ]] && return "$package_status"; }
   package_status=1; reboot_required=0
   check_session_restart
   [[ $reboot_required == 1 ]]

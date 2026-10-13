@@ -752,7 +752,7 @@ check_usb_device_sharing() {
 check_session_restart() {
   # First installation adds KWin startup hooks. A running greeter/desktop
   # predates those hooks even when the newly installed DRM module loads.
-  if ! { if [[ $pkg_mgr == dnf ]]; then rpm -q --quiet artlight; else pacman -Q artlight >/dev/null 2>&1; fi; }; then
+  if ! pkg_is_installed artlight; then
     reboot_required=1
     warn 'First installation requires a reboot so the login screen and desktop load the ArtLight display and session integration.'
   fi
