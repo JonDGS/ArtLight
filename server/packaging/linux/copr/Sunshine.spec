@@ -55,7 +55,11 @@ BuildRequires: libXrandr-devel
 BuildRequires: libXtst-devel
 BuildRequires: openssl-devel
 BuildRequires: pipewire-devel
+# PNG, JPEG and WebP enable game-artwork conversion; without all three CMake silently
+# builds without it (ARTLIGHT_STEAM_ARTWORK_IMAGE_LIBS).
 BuildRequires: libjpeg-turbo-devel
+BuildRequires: libpng-devel
+BuildRequires: libwebp-devel
 BuildRequires: nodejs
 BuildRequires: npm
 BuildRequires: sqlite-devel
