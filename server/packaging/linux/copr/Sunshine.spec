@@ -1525,6 +1525,10 @@ if [ ! -x "$(command -v rpm-ostree)" ]; then
       exit 1
     fi
   else
+    # Lift the runtime masks that %pre applied so the follow-up command below
+    # can actually start the host without a reboot (mirrors the Arch script).
+    artlight_unmask_host_for_controller || \
+      echo "warning: the ArtLight host units stay masked until the next reboot." >&2
     echo "==> ACTION REQUIRED: ArtLight could not prepare the machine profile; review the preceding setup or migration error." >&2
     echo "    Run:  sudo artlight configure USER" >&2
     echo "    then: sudo systemctl enable --now artlight-session-controller.service" >&2
