@@ -476,9 +476,9 @@ download_release_package() {
   fi
   # Releases are listed newest first; pick the first one that carries a package
   # for this package manager.
-  local asset_pattern='^artlight-.*\\.pkg\\.tar\\.zst$' package_kind='an Arch package'
+  local asset_pattern='^artlight-.*\.pkg\.tar\.zst$' package_kind='an Arch package'
   if [[ $pkg_mgr == dnf ]]; then
-    asset_pattern='^artlight-[0-9].*\\.x86_64\\.rpm$'
+    asset_pattern='^artlight-[0-9].*\.x86_64\.rpm$'
     package_kind='a Fedora RPM'
   fi
   read -r tag asset_name asset_url < <(jq -r --arg pattern "$asset_pattern" "
