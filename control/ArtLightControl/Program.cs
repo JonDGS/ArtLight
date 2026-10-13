@@ -24,6 +24,15 @@ namespace ArtLightControl
         [STAThread]
         static void Main(string[] args)
         {
+            // Absolute first statement: a record of what died. Control previously had no
+            // unhandled-exception handler at all, so a UI-thread exception was stowed by the
+            // XAML framework and the process vanished with 0xc000027b leaving nothing behind.
+            // Everything below this line can throw; this is the only thing that can report it.
+            CrashLogger.Install();
+            CrashLogger.Note(
+                $"[Startup] ArtLightControl {typeof(Program).Assembly.GetName().Version} "
+                + $"starting (pid {Environment.ProcessId}, args: {string.Join(" ", args)})");
+
             // Before anything logs: opt into the high-frequency detail (process scan, bridge
             // traffic, log rediscovery). Off by default — with it on, those paths accounted
             // for ~99% of debug.log and buried the events actually worth reading.
